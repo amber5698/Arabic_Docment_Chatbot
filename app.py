@@ -2,8 +2,8 @@ import streamlit as st
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import chromadb
 
-# Load the Jais model and tokenizer
-model_name = "InceptionAI/Jais"  # Ensure this is the correct model ID from Hugging Face
+# Load the Jais model and tokenizer (ensure this is the correct model ID)
+model_name = "InceptionAI/Jais"  # Replace with an actual model ID from Hugging Face
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(model_name)
 
