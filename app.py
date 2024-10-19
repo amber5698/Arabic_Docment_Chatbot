@@ -1,11 +1,28 @@
+import logging
 import streamlit as st
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 
+# Set up logging
+logger = logging.getLogger("streamlit_logger")
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+handler.setLevel(logging.INFO)
+logger.addHandler(handler)
+
+# Log the start of the application
+logger.info("Streamlit app started")
+
 # Load the model and tokenizer from Hugging Face
 model_name = "FreedomIntelligence/AceGPT-7B-chat"  # Change this to the desired model
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name)
+logger.info(f"Loading model: {model_name}")
+try:
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(model_name)
+    logger.info("Model and tokenizer loaded successfully.")
+except Exception as e:
+    logger.error(f"Error loading model: {e}")
+    st.error("Failed to load the model. Please check the logs for details.")
 
 def generate_response(user_input):
     """Generate a response from the model based on user input."""
@@ -29,6 +46,8 @@ if st.button("Ask"):
     if user_input:
         response = generate_response(user_input)
         st.write("**Chatbot:**", response)
+        logger.info(f"User asked: {user_input}")
+        logger.info(f"Chatbot responded: {response}")
     else:
         st.write("Please enter a question.")
 
