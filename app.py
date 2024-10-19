@@ -1,56 +1,55 @@
-import logging
 import streamlit as st
 from transformers import AutoModelForCausalLM, AutoTokenizer
-import torch
+import chromadb
 
-# Set up logging
-logger = logging.getLogger("streamlit_logger")
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-handler.setLevel(logging.INFO)
-logger.addHandler(handler)
+# Load the Jais model and tokenizer
+model_name = "InceptionAI/Jais"  # Ensure this is the correct model ID from Hugging Face
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(model_name)
 
-# Log the start of the application
-logger.info("Streamlit app started")
+# Initialize Chroma DB for document retrieval
+client = chromadb.Client()
+collection = client.create_collection("arabic_books")
 
-# Load the model and tokenizer from Hugging Face
-model_name = "FreedomIntelligence/AceGPT-7B-chat"  # Change this to the desired model
-logger.info(f"Loading model: {model_name}")
-try:
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForCausalLM.from_pretrained(model_name)
-    logger.info("Model and tokenizer loaded successfully.")
-except Exception as e:
-    logger.error(f"Error loading model: {e}")
-    st.error("Failed to load the model. Please check the logs for details.")
+# Function to add documents to the collection (example documents)
+def add_documents(documents):
+    for doc in documents:
+        collection.add(doc)
 
+# Example: Add documents (list of dictionaries with 'text' and 'metadata')
+documents = [
+    {"text": "كتاب عن الفلسفة", "metadata": {"title": "فلسفة", "author": "أحمد"}},
+    {"text": "رواية تاريخية", "metadata": {"title": "تاريخ", "author": "علي"}},
+]
+add_documents(documents)
+
+# Function to generate response using RAG
 def generate_response(user_input):
-    """Generate a response from the model based on user input."""
-    inputs = tokenizer.encode(user_input + tokenizer.eos_token, return_tensors="pt")
-    
+    # Retrieve relevant documents based on user input
+    results = collection.query(user_input, n_results=3)  # Retrieve top 3 relevant documents
+
+    # Prepare context for generation
+    context = "\n".join([result['text'] for result in results['documents']])
+
+    # Tokenize input with context
+    inputs = tokenizer.encode(f"Use the given context to answer the question. Context: {context}, Question: {user_input}", return_tensors='pt')
+
     # Generate response
-    with torch.no_grad():
-        outputs = model.generate(inputs, max_length=150, num_return_sequences=1)
-    
+    outputs = model.generate(inputs, max_length=150, num_return_sequences=1)
+
+    # Decode response
     response = tokenizer.decode(outputs[0], skip_special_tokens=True)
     return response
 
 # Streamlit UI setup
-st.title("Arabic Book Collection Chatbot")
-st.subheader("Ask me anything about our Arabic books!")
+st.title("Arabic Book Chatbot")
+st.write("Welcome to the Arabic Book Chatbot! Ask me anything about our collection.")
 
-# User input
 user_input = st.text_input("Your Question:")
 
 if st.button("Ask"):
     if user_input:
         response = generate_response(user_input)
-        st.write("**Chatbot:**", response)
-        logger.info(f"User asked: {user_input}")
-        logger.info(f"Chatbot responded: {response}")
+        st.write("**Response:**", response)
     else:
         st.write("Please enter a question.")
-
-# Footer
-st.markdown("---")
-st.write("This chatbot uses AceGPT to provide answers based on our collection of Arabic books.")
