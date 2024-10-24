@@ -1,7 +1,7 @@
 streamlit
 transformers
-torch==2.0.0  # Ensure you're using a compatible version of PyTorch
+torch==2.0.0 
 langchain
 chromadb
 huggingface-hub
-protobuf==3.20.3  # Downgraded version to avoid TypeError
+protobuf==3.20.3
